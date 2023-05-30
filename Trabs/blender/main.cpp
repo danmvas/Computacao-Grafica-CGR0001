@@ -106,31 +106,24 @@ void ShutdownRC(void)
 ///////////////////////////////////////////////////
 // Respond to arrow keys, move the viewpoint back
 // and forth
-void SpecialKeys(unsigned char key, int x, int y)
+void SpecialKeys(int key, int x, int y)
 {
-    if (key == 'w')
+       switch (key)
     {
-        printf("W\n");
+    case GLUT_KEY_UP:
         zPos += 1.0f;
-    }
-
-    if (key == 's')
-    {
-        printf("S\n");
+        break;
+    case GLUT_KEY_DOWN:
         zPos -= 1.0f;
-    }
-
-    if (key == 'q')
-    {
-        printf("Q\n");
+        break;
+    case GLUT_KEY_LEFT:
         yRot += 1.0f;
+        break;
+    case GLUT_KEY_RIGHT:
+        yRot -= 1.0f;
+        break;
     }
 
-    if (key == 'e')
-    {
-        printf("E\n");
-        yRot -= 1.0f;
-    }
 
     printf("%f\n", yRot);
 
@@ -170,6 +163,35 @@ void capa(GLfloat z)
     glRotatef(180, 1, 0, 0);
 
     // Capa
+    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CAPA]);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(-10.0f, -10.0f, z);
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(-10.0f, -10.0f, z - 10.0f);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(-10.0f, 10.0f, z - 10.0f);
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(-10.0f, 10.0f, z);
+    glEnd();
+
+    // Restore the matrix state
+    glPopMatrix();
+}
+
+void capa_contra(GLfloat z)
+{
+    // Save the matrix state and do the rotations
+    glPushMatrix();
+    // Move object back and do in place rotation
+    glTranslatef(0.0f, 0.0f, -60);
+    glRotatef(90, 0, 1, 0);
+    glRotatef(180, 1, 0, 0);
+
+    // Capa
     glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CAPA_TRASEIRA]);
     glBegin(GL_QUADS);
     glTexCoord2f(0.0f, 0.0f);
@@ -189,18 +211,69 @@ void capa(GLfloat z)
     glPopMatrix();
 }
 
+void capa_meio(GLfloat z)
+{
+    // Save the matrix state and do the rotations
+    glPushMatrix();
+    // Move object back and do in place rotation
+    glTranslatef(0.0f, 0.0f, -60);
+    glRotatef(90, 0, 1, 0);
+    glRotatef(180, 1, 0, 0);
+
+    // Capa
+    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_COLUNA]);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex3f(-10.0f, -10.0f, z);
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex3f(-10.0f, -10.0f, z - 10.0f);
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex3f(-10.0f, 10.0f, z - 10.0f);
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex3f(-10.0f, 10.0f, z);
+    glEnd();
+
+    // Restore the matrix state
+    glPopMatrix();
+}
+
+
 ///////////////////////////////////////////////////////
 // Called to draw scene
 void RenderScene(void)
 {
 
-    // Clear the window with current clearing color
+  // Clear the window with current clearing color
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glRotatef(yRot, 0.0f, 1, 0.0f);
-    GLfloat z;
+    glLoadIdentity(); // Resetar a matriz de modelo-visão
 
-    capa(z);
+    // Define a posição e orientação da câmera em relação ao livro
+    gluLookAt(0.0f, 0.0f, -100.0f, // Posição da câmera
+              0.0f, 0.0f, 0.0f,   // Ponto para onde a câmera está olhando
+              0.0f, 1.0f, 0.0f);  // Vetor de orientação da câmera (normalmente apontando para cima)
+
+    glRotatef(yRot, 0.0f, 1.0f, 0.0f); // Aplicar rotação ao redor do eixo Y
+
+    GLfloat z = zPos;
+    capa(z); // Desenhar o livro
+
+    // Selecionar a textura apropriada com base na rotação
+    if (yRot > -45.0f && yRot < 45.0f)
+    {
+        glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CAPA]);
+    }
+    else if (yRot > 45.0f && yRot < 135.0f)
+    {
+        capa_meio(z);
+    }
+    else
+    {
+        capa_contra(z);
+    }
 
     // Buffer swap
     glutSwapBuffers();
@@ -216,7 +289,7 @@ int main(int argc, char *argv[])
     glutInitWindowSize(800, 600);
     glutCreateWindow("Tunnel");
     glutReshapeFunc(ChangeSize);
-    glutKeyboardFunc(SpecialKeys);
+    glutSpecialFunc(SpecialKeys);
     glutDisplayFunc(RenderScene);
 
     // Add menu entries to change filter
